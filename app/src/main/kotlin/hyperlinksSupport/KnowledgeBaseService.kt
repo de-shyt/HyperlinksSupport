@@ -6,19 +6,18 @@ import kotlin.collections.HashMap
 import kotlin.io.path.Path
 import kotlin.random.Random
 
+/**
+ * Responsible for creating, setting up and removing knowledge bases.
+ */
 class KnowledgeBaseService {
-    private val knowledgeBases = HashMap<String, String>()
     private val filesDirectory = Path(System.getProperty("user.dir"), "files").toString()
 
-    public fun generateRandomString(length: Int): String {
-        val charPool: List<Char> = ('a'..'z') + ('A'..'Z') + ('0'..'9') // Define the characters to choose from
-        return (1..length)
-            .map { Random.nextInt(0, charPool.size) }
-            .map(charPool::get)
-            .joinToString("")
-    }
-
-    public fun createKnowledgeBase(): File {
+    /**
+     * Creates a new knowledge base by creating a directory and one initial file. The name of the file is received from the user.
+     * @return an instance of the `KnowledgeBaseManager` class.
+     * @see KnowledgeBaseManager
+     */
+    fun createKnowledgeBase(): KnowledgeBaseManager {
         // Get name for the initial file from the user
         val scanner = Scanner(System.`in`)
         print("Please, enter the name for the initial file: ")
@@ -35,40 +34,40 @@ class KnowledgeBaseService {
         created = initFile.createNewFile()
         require(created) { "Error while trying to create the initial file for a new knowledge base." }
 
-        // Save knowledge base ID in the `knowledgeBases` map.
-        registerKnowledgeBase(knowledgeBaseId, fileName)
-
-        return initFile
+        return KnowledgeBaseManager(knowledgeBaseId, initFile)
     }
 
+    /**
+     * Generates an ID for a knowledge base. ID is a string consisting of 10 random characters.
+     * @return a new and unique ID for a knowledge base
+     */
     private fun generateKnowledgeBaseId(): String {
-        var knowledgeBaseId = generateRandomString(10)
+        var knowledgeBaseId = generateRandomString()
         var directory = File(filesDirectory, knowledgeBaseId)
         while (directory.exists()) {
-            knowledgeBaseId = generateRandomString(10)
+            knowledgeBaseId = generateRandomString()
             directory = File(filesDirectory, knowledgeBaseId)
         }
         return knowledgeBaseId
     }
 
-    private fun registerKnowledgeBase(knowledgeBaseId: String, initFileName: String) {
-        // Check that the directory where the knowledge base is located exists
-        val directory = File(filesDirectory, knowledgeBaseId)
-        require(directory.exists()) { "Directory '$knowledgeBaseId' does not exist." }
-        require(directory.isDirectory) { "'$knowledgeBaseId' is expected to be a directory." }
-
-        // Check that the initial file of the knowledge base exists
-        val initFile = File(directory.path, initFileName)
-        require(initFile.exists()) { "Initial file with the name '$knowledgeBaseId:$initFileName' does not exist." }
-        require(initFile.isFile) { "'$knowledgeBaseId:$initFileName' is expected to be a file."}
-
-        // Save the mapping between knowledge base ID and the corresponding initial file
-        knowledgeBases[knowledgeBaseId] = initFileName
+    /**
+     * Generates a string consisting of 10 random characters. The result is used as an ID for a knowledge base.
+     * @return A string consisting of 10 random characters
+     */
+    private fun generateRandomString(): String {
+        val charPool: List<Char> = ('a'..'z') + ('A'..'Z') + ('0'..'9') // Define the characters to choose from
+        return (1..10)
+            .map { Random.nextInt(0, charPool.size) }
+            .map(charPool::get)
+            .joinToString("")
     }
 
-    public fun removeKnowledgeBase(knowledgeBaseId: String) {
-        require(knowledgeBases.containsKey(knowledgeBaseId)) { "Unknown knowledge base $knowledgeBaseId." }
-
+    /**
+     * Removes files created for a specific knowledge base.
+     * @param knowledgeBaseId ID of a knowledge base which files should be removed
+     */
+    fun removeKnowledgeBase(knowledgeBaseId: String) {
         // Delete files that were used by the knowledge base
         val directory = File(filesDirectory, knowledgeBaseId)
         if (directory.exists() && directory.isDirectory) {
@@ -76,8 +75,5 @@ class KnowledgeBaseService {
             require(directory.listFiles()!!.isEmpty()) { "Not all files were removed from '$knowledgeBaseId'" }
             directory.delete()
         }
-
-        // Remove the mapping between knowledge base ID and the corresponding initial file
-        knowledgeBases.remove(knowledgeBaseId)
     }
 }
