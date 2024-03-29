@@ -38,5 +38,5 @@ dependencies {
 
 application {
     // Define the main class for the application.
-    mainClass.set("HyperlinksSupport.AppKt")
+    mainClass.set("HyperlinksSupport.MainKt")
 }
